@@ -2510,7 +2510,7 @@
                                 .join('');
 
             if (feedback === 'GGGGG') {
-                statusMessage.textContent = "Congratulations! You solved it!";
+                statusMessage.textContent = "Success!";
                 submitBtn.disabled = true;
                 return;
             }
@@ -2597,7 +2597,7 @@
                 renderFeedbackGrid(nextWord);
             } else {
                 optimalWordDisplay.textContent = "---";
-                statusMessage.textContent = "No possible words match the clues. Please check for errors and reset.";
+                statusMessage.textContent = "You lose, loser.";
                 submitBtn.disabled = true;
             }
 
@@ -2638,3 +2638,4 @@
     </script>
 </body>
 </html>
+
