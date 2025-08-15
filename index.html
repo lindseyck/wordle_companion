@@ -42,7 +42,7 @@
                 <option>ADIEU</option>
                 <option>ROATE</option>
                 <option>SLATE</option>
-                <option>PLACE</option>                
+                <option>PLACE</option>
                 <option>STARE</option>                
             </select>
         </div>
@@ -268,21 +268,33 @@
 
             // Allow UI to update before starting heavy calculation
             requestAnimationFrame(() => {
+                // --- FIXED LOGIC: Two-pass system for feedback processing ---
+
+                // Pass 1: Identify all included letters (Greens and Yellows) first.
+                // This prevents bugs where a letter is both black and green/yellow in a guess.
+                for (let i = 0; i < feedback.length; i++) {
+                    const result = feedback[i];
+                    const letter = currentGuess[i];
+                    if (result === 'G' || result === 'Y') {
+                        includedLetters.add(letter);
+                    }
+                }
+
+                // Pass 2: Update positions for all letters.
                 for (let i = 0; i < feedback.length; i++) {
                     const result = feedback[i];
                     const letter = currentGuess[i];
 
                     if (result === 'G') {
                         greenPositions[i] = letter;
-                        includedLetters.add(letter);
                     } else if (result === 'Y') {
-                        includedLetters.add(letter);
                         if (yellowPositions[letter]) {
                             yellowPositions[letter].push(i);
                         } else {
                             yellowPositions[letter] = [i];
                         }
                     } else if (result === 'B') {
+                        // Only blacklist a letter if we haven't already confirmed it's in the word.
                         if (!includedLetters.has(letter)) {
                             yellowPositions[letter] = [];
                         }
@@ -422,9 +434,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
