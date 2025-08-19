@@ -34,7 +34,7 @@
 
         <!-- Starting Word Selector -->
         <div class="mb-4">
-            <label for="starting-word-select" class="block text-sm font-medium text-gray-700 text-center">Choose a starting word:</label>
+            <label for="starting-word-select" class="block text-sm font-medium text-gray-700 text-center">Select a starting word:</label>
             <select id="starting-word-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md shadow-sm text-center">
                 <option>SALET</option>
                 <option>RAISE</option>
@@ -43,7 +43,7 @@
                 <option>ROATE</option>
                 <option>SLATE</option>
                 <option>PLACE</option>
-                <option>STARE</option>                
+                <option>STARE</option>     
             </select>
         </div>
 
@@ -367,7 +367,10 @@
                 submitBtn.disabled = true;
             }
 
-            possibilitiesCount.textContent = `${possibleWords.length} possibilities remain.`;
+            const count = possibleWords.length;
+            const plural = count === 1 ? 'possibility' : 'possibilities';
+            possibilitiesCount.textContent = `${count} ${plural} remain.`;
+            
             if (possibleWords.length < 40 && possibleWords.length > 0) {
                 possibleWordsList.textContent = possibleWords.join(', ');
                 possibleWordsList.style.display = 'block';
@@ -434,4 +437,3 @@
     </script>
 </body>
 </html>
-
