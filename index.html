@@ -369,7 +369,8 @@
 
             const count = possibleWords.length;
             const plural = count === 1 ? 'possibility' : 'possibilities';
-            possibilitiesCount.textContent = `${count} ${plural} remain.`;
+            const verb = count === 1 ? 'remains' : 'remain';
+            possibilitiesCount.textContent = `${count} ${plural} ${verb}.`;
             
             if (possibleWords.length < 40 && possibleWords.length > 0) {
                 possibleWordsList.textContent = possibleWords.join(', ');
@@ -437,3 +438,4 @@
     </script>
 </body>
 </html>
+
