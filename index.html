@@ -89,7 +89,7 @@
     </div>
 
     <script>
-        // --- GLOBAL VARIABLES ---
+     // --- GLOBAL VARIABLES ---
         let MASTER_WORD_LIST = [];
 
         // --- DOM ELEMENTS ---
@@ -268,10 +268,8 @@
 
             // Allow UI to update before starting heavy calculation
             requestAnimationFrame(() => {
-                // --- FIXED LOGIC: Two-pass system for feedback processing ---
-
+                // --- CORRECTED LOGIC: Two-pass system for feedback processing ---
                 // Pass 1: Identify all included letters (Greens and Yellows) first.
-                // This prevents bugs where a letter is both black and green/yellow in a guess.
                 for (let i = 0; i < feedback.length; i++) {
                     const result = feedback[i];
                     const letter = currentGuess[i];
@@ -294,49 +292,62 @@
                             yellowPositions[letter] = [i];
                         }
                     } else if (result === 'B') {
-                        // Only blacklist a letter if we haven't already confirmed it's in the word.
                         if (!includedLetters.has(letter)) {
                             yellowPositions[letter] = [];
                         }
                     }
                 }
 
-                let wordsToRemove = new Set();
+                // --- CORRECTED FILTERING LOGIC ---
+                const newPossibleWords = [];
                 for (const word of possibleWords) {
+                    let isPossible = true;
+
+                    // Rule 1: Check greens
                     for (const pos in greenPositions) {
                         if (word[pos] !== greenPositions[pos]) {
-                            wordsToRemove.add(word);
-                            continue;
-                        }
-                    }
-                    let wordLetters = new Set(word);
-                    for (const letter of includedLetters) {
-                        if (!wordLetters.has(letter)) {
-                            wordsToRemove.add(word);
+                            isPossible = false;
                             break;
                         }
                     }
-                    if(wordsToRemove.has(word)) continue;
+                    if (!isPossible) continue;
 
+                    // Rule 2: Check that all included letters are present
+                    const wordLetters = new Set(word);
+                    for (const letter of includedLetters) {
+                        if (!wordLetters.has(letter)) {
+                            isPossible = false;
+                            break;
+                        }
+                    }
+                    if (!isPossible) continue;
+
+                    // Rule 3: Check yellows and blacks
                     for (const letter in yellowPositions) {
                         const positions = yellowPositions[letter];
-                        if (positions.length === 0) {
-                            if (word.includes(letter) && !Object.values(greenPositions).includes(letter)) {
-                                wordsToRemove.add(word);
-                                continue;
+                        if (positions.length === 0) { // Blacklisted letter
+                            if (word.includes(letter)) {
+                                isPossible = false;
+                                break;
                             }
-                        } else {
+                        } else { // Yellow letter
                             for (const pos of positions) {
                                 if (word[pos] === letter) {
-                                    wordsToRemove.add(word);
+                                    isPossible = false;
                                     break;
                                 }
                             }
                         }
+                        if (!isPossible) break;
+                    }
+                    if (!isPossible) continue;
+
+                    // If all checks pass, keep the word
+                    if (isPossible) {
+                        newPossibleWords.push(word);
                     }
                 }
-                
-                possibleWords = possibleWords.filter(word => !wordsToRemove.has(word));
+                possibleWords = newPossibleWords;
                 
                 attemptNum++;
                 let nextWord;
@@ -438,4 +449,3 @@
     </script>
 </body>
 </html>
-
