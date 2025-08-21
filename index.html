@@ -89,7 +89,8 @@
     </div>
 
     <script>
-     // --- GLOBAL VARIABLES ---
+        
+       // --- GLOBAL VARIABLES ---
         let MASTER_WORD_LIST = [];
 
         // --- DOM ELEMENTS ---
@@ -106,9 +107,10 @@
 
         // --- GAME STATE ---
         let possibleWords = [];
-        let includedLetters = new Set();
         let greenPositions = {}; // { position: letter }
-        let yellowPositions = {}; // { letter: [wrong positions] }
+        let yellowLetters = new Set(); // Letters known to be in the word (yellow)
+        let greyPositions = {}; // { letter: Set of positions }
+        let blackLetters = new Set(); // Letters known not to be in the word
         let attemptNum = 1;
         let currentGuess = "";
         let guessHistory = [];
@@ -254,7 +256,7 @@
             updateHistoryGrid();
 
             if (feedback === 'GGGGG') {
-                statusMessage.textContent = "Success!";
+                statusMessage.textContent = "Congratulations! You solved it!";
                 statusMessage.className = "text-lg font-semibold text-green-700";
                 submitBtn.disabled = true;
                 return;
@@ -268,42 +270,47 @@
 
             // Allow UI to update before starting heavy calculation
             requestAnimationFrame(() => {
-                // --- CORRECTED LOGIC: Two-pass system for feedback processing ---
-                // Pass 1: Identify all included letters (Greens and Yellows) first.
+                // --- BUG FIX: Two-pass system for feedback processing ---
+                const includedInGuess = new Set();
+                
+                // Pass 1: Find all greens and yellows in the current guess
                 for (let i = 0; i < feedback.length; i++) {
-                    const result = feedback[i];
-                    const letter = currentGuess[i];
-                    if (result === 'G' || result === 'Y') {
-                        includedLetters.add(letter);
+                    if (feedback[i] === 'G' || feedback[i] === 'Y') {
+                        includedInGuess.add(currentGuess[i]);
                     }
                 }
 
-                // Pass 2: Update positions for all letters.
+                // Pass 2: Update global state based on feedback
                 for (let i = 0; i < feedback.length; i++) {
                     const result = feedback[i];
                     const letter = currentGuess[i];
 
                     if (result === 'G') {
                         greenPositions[i] = letter;
+                        yellowLetters.add(letter); // A green is also a known included letter
                     } else if (result === 'Y') {
-                        if (yellowPositions[letter]) {
-                            yellowPositions[letter].push(i);
-                        } else {
-                            yellowPositions[letter] = [i];
-                        }
+                        yellowLetters.add(letter);
+                        if (!greyPositions[letter]) greyPositions[letter] = new Set();
+                        greyPositions[letter].add(i);
                     } else if (result === 'B') {
-                        if (!includedLetters.has(letter)) {
-                            yellowPositions[letter] = [];
+                        if (includedInGuess.has(letter)) {
+                            // This is a duplicate letter that's green/yellow elsewhere,
+                            // so it's just a positional grey.
+                            if (!greyPositions[letter]) greyPositions[letter] = new Set();
+                            greyPositions[letter].add(i);
+                        } else {
+                            // This letter is not in the word at all.
+                            blackLetters.add(letter);
                         }
                     }
                 }
 
-                // --- CORRECTED FILTERING LOGIC ---
+                // --- BUG FIX: Rewritten filtering logic ---
                 const newPossibleWords = [];
                 for (const word of possibleWords) {
                     let isPossible = true;
 
-                    // Rule 1: Check greens
+                    // Rule 1: Must match all green positions
                     for (const pos in greenPositions) {
                         if (word[pos] !== greenPositions[pos]) {
                             isPossible = false;
@@ -312,9 +319,18 @@
                     }
                     if (!isPossible) continue;
 
-                    // Rule 2: Check that all included letters are present
+                    // Rule 2: Must not contain any blacklisted letters (unless it's also a green letter)
+                    for (const letter of blackLetters) {
+                        if (word.includes(letter) && !Object.values(greenPositions).includes(letter)) {
+                            isPossible = false;
+                            break;
+                        }
+                    }
+                    if (!isPossible) continue;
+                    
+                    // Rule 3: Must contain all yellow letters
                     const wordLetters = new Set(word);
-                    for (const letter of includedLetters) {
+                    for (const letter of yellowLetters) {
                         if (!wordLetters.has(letter)) {
                             isPossible = false;
                             break;
@@ -322,20 +338,12 @@
                     }
                     if (!isPossible) continue;
 
-                    // Rule 3: Check yellows and blacks
-                    for (const letter in yellowPositions) {
-                        const positions = yellowPositions[letter];
-                        if (positions.length === 0) { // Blacklisted letter
-                            if (word.includes(letter)) {
+                    // Rule 4: Must not have letters in greyed-out positions
+                    for (const letter in greyPositions) {
+                        for (const pos of greyPositions[letter]) {
+                            if (word[pos] === letter) {
                                 isPossible = false;
                                 break;
-                            }
-                        } else { // Yellow letter
-                            for (const pos of positions) {
-                                if (word[pos] === letter) {
-                                    isPossible = false;
-                                    break;
-                                }
                             }
                         }
                         if (!isPossible) break;
@@ -396,9 +404,10 @@
 
             possibleWords = [...MASTER_WORD_LIST];
             guessHistory = [];
-            includedLetters.clear();
             greenPositions = {};
-            yellowPositions = {};
+            yellowLetters.clear();
+            greyPositions = {};
+            blackLetters.clear();
             attemptNum = 1;
             
             initializeHistoryGrid();
